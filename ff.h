@@ -140,7 +140,8 @@ typedef struct
 
 /* Directory object structure (DIR) */
 
-typedef struct {
+typedef struct 
+{
 	FATFS*	fs;				/* Pointer to the owner file system object (**do not change order**) */
 	WORD	id;				/* Owner file system mount ID (**do not change order**) */
 	WORD	index;			/* Current read/write index number */
@@ -162,7 +163,8 @@ typedef struct {
 
 /* File status structure (FILINFO) */
 
-typedef struct {
+typedef struct 
+{
 	DWORD	fsize;			/* File size */
 	WORD	fdate;			/* Last modified date */
 	WORD	ftime;			/* Last modified time */
