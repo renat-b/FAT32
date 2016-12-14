@@ -33,7 +33,8 @@ extern "C" {
 /* Definitions of volume management */
 
 #if _MULTI_PARTITION		/* Multiple partition configuration */
-typedef struct {
+typedef struct 
+{
 	BYTE pd;	/* Physical drive number */
 	BYTE pt;	/* Partition: 0:Auto detect, 1-4:Forced partition) */
 } PARTITION;
@@ -74,7 +75,8 @@ typedef char TCHAR;
 
 /* File system object structure (FATFS) */
 
-typedef struct {
+typedef struct 
+{
 	BYTE	fs_type;		/* FAT sub-type (0:Not mounted) */
 	BYTE	drv;			/* Physical drive number */
 	BYTE	csize;			/* Sectors per cluster (1,2,4...128) */
@@ -180,7 +182,8 @@ typedef struct
 
 /* File function return code (FRESULT) */
 
-typedef enum {
+typedef enum 
+{
 	FR_OK = 0,				/* (0) Succeeded */
 	FR_DISK_ERR,			/* (1) A hard error occurred in the low level disk I/O layer */
 	FR_INT_ERR,				/* (2) Assertion failed */
@@ -234,10 +237,10 @@ FRESULT f_setlabel (const TCHAR* label);							/* Set volume label */
 FRESULT f_mount (FATFS* fs, const TCHAR* path, BYTE opt);			/* Mount/Unmount a logical drive */
 FRESULT f_mkfs (const TCHAR* path, BYTE sfd, UINT au);				/* Create a file system on the volume */
 FRESULT f_fdisk (BYTE pdrv, const DWORD szt[], void* work);			/* Divide a physical drive into some partitions */
-int f_putc (TCHAR c, FIL* fp);										/* Put a character to the file */
-int f_puts (const TCHAR* str, FIL* cp);								/* Put a string to the file */
-int f_printf (FIL* fp, const TCHAR* str, ...);						/* Put a formatted string to the file */
-TCHAR* f_gets (TCHAR* buff, int len, FIL* fp);						/* Get a string from the file */
+int     f_putc (TCHAR c, FIL* fp);									/* Put a character to the file */
+int     f_puts (const TCHAR* str, FIL* cp);							/* Put a string to the file */
+int     f_printf (FIL* fp, const TCHAR* str, ...);					/* Put a formatted string to the file */
+TCHAR*  f_gets (TCHAR* buff, int len, FIL* fp);						/* Get a string from the file */
 
 #define f_eof(fp) (((fp)->fptr == (fp)->fsize) ? 1 : 0)
 #define f_error(fp) ((fp)->err)
@@ -308,14 +311,14 @@ int ff_del_syncobj (_SYNC_t sobj);				/* Delete a sync object */
 
 /* File attribute bits for directory entry */
 
-#define	AM_RDO	0x01	/* Read only */
-#define	AM_HID	0x02	/* Hidden */
-#define	AM_SYS	0x04	/* System */
-#define	AM_VOL	0x08	/* Volume label */
-#define AM_LFN	0x0F	/* LFN entry */
-#define AM_DIR	0x10	/* Directory */
-#define AM_ARC	0x20	/* Archive */
-#define AM_MASK	0x3F	/* Mask of defined bits */
+#define	AM_RDO	    0x01	/* Read only */
+#define	AM_HID	    0x02	/* Hidden */
+#define	AM_SYS	    0x04	/* System */
+#define	AM_VOL	    0x08	/* Volume label */
+#define AM_LFN	    0x0F	/* LFN entry */
+#define AM_DIR	    0x10	/* Directory */
+#define AM_ARC	    0x20	/* Archive */
+#define AM_MASK	    0x3F	/* Mask of defined bits */
 
 
 /* Fast seek feature */
@@ -326,12 +329,12 @@ int ff_del_syncobj (_SYNC_t sobj);				/* Delete a sync object */
 /*--------------------------------*/
 /* Multi-byte word access macros  */
 
-#if _WORD_ACCESS == 1	/* Enable word access to the FAT structure */
+#if _WORD_ACCESS == 1	    /* Enable word access to the FAT structure */
 #define	LD_WORD(ptr)		(WORD)(*(WORD*)(BYTE*)(ptr))
 #define	LD_DWORD(ptr)		(DWORD)(*(DWORD*)(BYTE*)(ptr))
 #define	ST_WORD(ptr,val)	*(WORD*)(BYTE*)(ptr)=(WORD)(val)
 #define	ST_DWORD(ptr,val)	*(DWORD*)(BYTE*)(ptr)=(DWORD)(val)
-#else					/* Use byte-by-byte access to the FAT structure */
+#else					    /* Use byte-by-byte access to the FAT structure */
 #define	LD_WORD(ptr)		(WORD)(((WORD)*((BYTE*)(ptr)+1)<<8)|(WORD)*(BYTE*)(ptr))
 #define	LD_DWORD(ptr)		(DWORD)(((DWORD)*((BYTE*)(ptr)+3)<<24)|((DWORD)*((BYTE*)(ptr)+2)<<16)|((WORD)*((BYTE*)(ptr)+1)<<8)|*(BYTE*)(ptr))
 #define	ST_WORD(ptr,val)	*(BYTE*)(ptr)=(BYTE)(val); *((BYTE*)(ptr)+1)=(BYTE)((WORD)(val)>>8)

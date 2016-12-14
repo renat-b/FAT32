@@ -78,13 +78,15 @@ int maketree (void)
                 {	
 					printf("Failed to open source file.\n"); break;
 				}
+
 				if (f_open(&DstFile, DstPath, FA_CREATE_ALWAYS | FA_WRITE))    /* Create destination file */
                 {	
 					printf("Failed to create destination file.\n"); break;
 				}
+
 				do   /* Copy source file to destination file */
                 {	
-					ReadFile(SrcFile, Buff, sizeof Buff, &br, 0);
+					ReadFile(SrcFile, Buff, sizeof(Buff), &br, 0);
 					if (br == 0) 
                         break;
 
@@ -145,14 +147,14 @@ int main (int argc, char* argv[])
 				"    <source node>: Source node\n"
 				"    <output file>: FAT volume image file\n"
 				"    <volume size>: Size of temporary volume size in unit of KiB\n"
-				"    <cluster size>: Size of cluster in unit of byte (default:512)\n"
-			);
+				"    <cluster size>: Size of cluster in unit of byte (default:512)\n");
+			
 		return 1;
 	}
 
-	strcpy(SrcPath, argv[ai++]);
-	outfile     = argv[ai++];
-	RamDiskSize = atoi(argv[ai++]) * 2;
+	strcpy(SrcPath,   argv[ai++]);
+	outfile         = argv[ai++];
+	RamDiskSize     = atoi(argv[ai++]) * 2;
 
 	csz = (argc >= 5) ? atoi(argv[ai++]) : 512;
 
@@ -173,6 +175,7 @@ int main (int argc, char* argv[])
         printf("No file in the source directory."); 
         return 3; 
     }
+
 	szvol = LD_WORD(RamDisk + BPB_TotSec16);
 	if (!szvol) 
         szvol = LD_DWORD(RamDisk + BPB_TotSec32);
