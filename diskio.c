@@ -55,7 +55,8 @@ DSTATUS disk_status (
 	BYTE pdrv		/* Physical drive nmuber (0) */
 )
 {
-	if (pdrv) return STA_NOINIT;
+	if (pdrv) 
+        return STA_NOINIT;
 
 	return RamDisk ? 0 : STA_NOINIT;
 }
@@ -73,8 +74,11 @@ DRESULT disk_read (
 	UINT count			/* Number of sectors to read */
 )
 {
-	if (pdrv || !RamDisk) return RES_NOTRDY;
-	if (sector >= RamDiskSize) return RES_PARERR;
+	if (pdrv || !RamDisk) 
+        return RES_NOTRDY;
+
+	if (sector >= RamDiskSize) 
+        return RES_PARERR;
 
 	CopyMemory(buff, RamDisk + sector * 512, count * 512);
 
@@ -94,8 +98,10 @@ DRESULT disk_write (
 	UINT count			/* Number of sectors to write */
 )
 {
-	if (pdrv || !RamDisk) return RES_NOTRDY;
-	if (sector >= RamDiskSize) return RES_PARERR;
+	if (pdrv || !RamDisk) 
+        return RES_NOTRDY;
+	if (sector >= RamDiskSize) 
+        return RES_PARERR;
 
 	CopyMemory(RamDisk + sector * 512, buff, count * 512);
 
@@ -147,9 +153,9 @@ DRESULT disk_ioctl (
 DWORD get_fattime(void)
 {
 	return 	  (DWORD)(SysTime.wYear - 1980) << 25
-			| (DWORD)SysTime.wMonth << 21
-			| (DWORD)SysTime.wDay << 16
-			| (DWORD)SysTime.wHour << 11
-			| (DWORD)SysTime.wMinute << 5
-			| (DWORD)SysTime.wSecond >> 1;
+			| (DWORD)SysTime.wMonth         << 21
+			| (DWORD)SysTime.wDay           << 16
+			| (DWORD)SysTime.wHour          << 11
+			| (DWORD)SysTime.wMinute        << 5
+			| (DWORD)SysTime.wSecond        >> 1;
 }

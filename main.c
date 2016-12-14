@@ -18,11 +18,11 @@
 #define BPB_TotSec32		32		/* Volume size [sector] (4) */
 #define BPB_FATSz32			36		/* FAT size [sector] (4) */
 
-extern get_fat(FATFS*, DWORD);	/* Read an FAT item (FatFs hidden API) */
+extern get_fat(FATFS*, DWORD);	    /* Read an FAT item (FatFs hidden API) */
 
 
-BYTE *RamDisk;		/* Poiter to the RAM disk */
-DWORD RamDiskSize;	/* Size of RAM disk in unit of sector */
+BYTE *RamDisk;		                /* Poiter to the RAM disk */
+DWORD RamDiskSize;	                /* Size of RAM disk in unit of sector */
 
 
 static FATFS FatFs;
@@ -242,7 +242,7 @@ int main (int argc, char* argv[])
 		if (!szfp) 
             szfp = LD_DWORD(RamDisk + BPB_FATSz32) * RamDisk[BPB_NumFATs];
 
-		edf = FatFs.fatbase + szf;
+		edf  = FatFs.fatbase + szf;
 		edfp = (FatFs.fs_type == FS_FAT32) ? FatFs.database : FatFs.dirbase;
 		MoveMemory(RamDisk + (edf * 512), RamDisk + (edfp * 512), (szvol - edfp) * 512);
 		szvol -= (szfp - szf) + FatFs.csize * (FatFs.n_fatent - nent);
