@@ -100,6 +100,7 @@ DRESULT disk_write (
 {
 	if (pdrv || !RamDisk) 
         return RES_NOTRDY;
+
 	if (sector >= RamDiskSize) 
         return RES_PARERR;
 
