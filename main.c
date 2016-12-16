@@ -29,7 +29,7 @@ static FATFS FatFs;
 static FIL DstFile;
 static HANDLE SrcFile;
 static WIN32_FIND_DATA Fd;
-static char SrcPath[512], DstPath[512];
+static TCHAR SrcPath[512], DstPath[512];
 static BYTE Buff[4096];
 static UINT Dirs, Files;
 
@@ -42,23 +42,30 @@ int maketree (void)
 	DWORD br;
 	UINT bw;
 
-	slen = strlen(SrcPath);
-	dlen = strlen(DstPath);
-	sprintf(&SrcPath[slen], "/*");
+	slen = wcslen(SrcPath);
+	dlen = wcslen(DstPath);
+
+    wsprintf(&SrcPath[slen], L"/*");
+	//sprintf(&SrcPath[slen], L"/*");
+
 	hdir = FindFirstFile(SrcPath, &Fd);		/* Open directory */
 	if (hdir == INVALID_HANDLE_VALUE) 
     {
-		printf("Failed to open directory.\n");
+		wprintf(L"Failed to open directory.\n");
 	} 
     else 
     {
 		for (;;) 
         {
-			sprintf(&SrcPath[slen], "/%s", Fd.cFileName);
-			sprintf(&DstPath[dlen], "/%s", Fd.cFileName);
+			//sprintf(&SrcPath[slen], "/%s", Fd.cFileName);
+			//sprintf(&DstPath[dlen], "/%s", Fd.cFileName);
+            wsprintf(&SrcPath[slen], L"/%s", Fd.cFileName);
+            wsprintf(&DstPath[dlen], L"/%s", Fd.cFileName);
+
+
 			if (Fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)    /* The item is a directory */
             {	
-				if (strcmp(Fd.cFileName, ".") && strcmp(Fd.cFileName, "..")) 
+				if (/*strcmp*/wcscmp(Fd.cFileName, L".") && /*strcmp*/wcscmp(Fd.cFileName, L".."))
                 {
 					if (f_mkdir(DstPath))    /* Create destination directory */
                     {	
@@ -73,15 +80,20 @@ int maketree (void)
 			} 
             else    /* The item is a file */
             {	
-				printf("%s\n", SrcPath);
+				//printf("%s\n", SrcPath);
+                wprintf(L"%s\n", SrcPath);
 				if ((SrcFile = CreateFile(SrcPath, GENERIC_READ, 0, 0, OPEN_EXISTING, 0, 0)) == INVALID_HANDLE_VALUE)   /* Open source file */
                 {	
-					printf("Failed to open source file.\n"); break;
+					//printf("Failed to open source file.\n"); 
+                    wprintf(L"Failed to open source file.\n"); 
+                    break;
 				}
 
 				if (f_open(&DstFile, DstPath, FA_CREATE_ALWAYS | FA_WRITE))    /* Create destination file */
                 {	
-					printf("Failed to create destination file.\n"); break;
+					//printf("Failed to create destination file.\n"); break;
+                    wprintf(L"Failed to create destination file.\n"); 
+                    break;
 				}
 
 				do   /* Copy source file to destination file */
@@ -98,7 +110,8 @@ int maketree (void)
 
 				if (br && br != bw) 
                 {
-					printf("Failed to write file.\n"); break;
+					wprintf(L"Failed to write file.\n"); 
+                    break;
 				}
 				Files++;
 			}
@@ -117,18 +130,18 @@ int maketree (void)
 
 
 
-int main (int argc, char* argv[])
+int wmain (int argc, wchar_t* argv[])
 {
 	UINT csz;
 	HANDLE wh;
 	DWORD wb, szvol;
 	int ai = 1, truncation = 0;
-	const char *outfile;
+	const wchar_t *outfile;
 
 	/* Initialize parameters */
 	if (argc >= 2 && *argv[ai] == '-') 
     {
-		if (strcmp(argv[ai], "-t") == 0) 
+		if (/*strcmp*/wcscmp(argv[ai], L"-t") == 0)
         {
 			truncation = 1;
 			ai++;
@@ -142,27 +155,28 @@ int main (int argc, char* argv[])
 
 	if (argc < 3) 
     {
-		printf("usage: mkfatimg [-t] <source node> <output file> <volume size> [<cluster size>]\n"
-				"    -t: Truncate unused area for read only volume.\n"
-				"    <source node>: Source node\n"
-				"    <output file>: FAT volume image file\n"
-				"    <volume size>: Size of temporary volume size in unit of KiB\n"
-				"    <cluster size>: Size of cluster in unit of byte (default:512)\n");
+		wprintf(L"usage: mkfatimg [-t] <source node> <output file> <volume size> [<cluster size>]\n"
+				L"    -t: Truncate unused area for read only volume.\n"
+				L"    <source node>: Source node\n"
+				L"    <output file>: FAT volume image file\n"
+				L"    <volume size>: Size of temporary volume size in unit of KiB\n"
+				L"    <cluster size>: Size of cluster in unit of byte (default:512)\n");
 			
 		return 1;
 	}
-
-	strcpy(SrcPath,   argv[ai++]);
+	
+    wcscpy(SrcPath, argv[ai++]);
 	outfile         = argv[ai++];
-	RamDiskSize     = atoi(argv[ai++]) * 2;
+	RamDiskSize     = _wtoi(argv[ai++]) * 2;
 
-	csz = (argc >= 5) ? atoi(argv[ai++]) : 512;
+	csz = (argc >= 5) ? _wtoi(argv[ai++]) : 512;
 
 	/* Create an FAT volume */
-	f_mount(&FatFs, "", 0);
-	if (f_mkfs("", 1, csz)) 
+	f_mount(&FatFs, L"", 0);
+	if (f_mkfs(L"", 1, csz)) 
     {
-		printf("Failed to create FAT volume. Adjust volume size or cluster size.\n");
+		//printf("Failed to create FAT volume. Adjust volume size or cluster size.\n");
+        wprintf(L"Failed to create FAT volume. Adjust volume size or cluster size.\n");
 		return 2;
 	}
 
@@ -172,7 +186,8 @@ int main (int argc, char* argv[])
 
 	if (!Files) 
     { 
-        printf("No file in the source directory."); 
+        //printf("No file in the source directory."); 
+        wprintf(L"No file in the source directory."); 
         return 3; 
     }
 
@@ -269,11 +284,11 @@ int main (int argc, char* argv[])
 	}
 
 	/* Output the FAT volume to the file */
-	printf("\nWriting output file...");
+	wprintf(L"\nWriting output file...");
 	wh = CreateFile(outfile, GENERIC_WRITE, 0, 0, CREATE_ALWAYS, 0, 0);
 	if (wh == INVALID_HANDLE_VALUE) 
     {
-		printf("Failed to create output file.\n");
+		wprintf(L"Failed to create output file.\n");
 		return 4;
 	}
 
@@ -285,11 +300,12 @@ int main (int argc, char* argv[])
 	if (szvol != wb) 
     {
 		DeleteFile(argv[2]);
-		printf("Failed to write output file.\n");
+		//printf("Failed to write output file.\n");
+        wprintf(L"Failed to write output file.\n");
 		return 4;
 	}
 
-	printf("\n%u files and %u directories in a %u bytes of FAT volume.\n", Files, Dirs, szvol);
+	wprintf(L"\n%u files and %u directories in a %u bytes of FAT volume.\n", Files, Dirs, szvol);
 
 	return 0;
 }
