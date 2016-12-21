@@ -51,7 +51,7 @@ int maketree (void)
 	hdir = FindFirstFile(SrcPath, &Fd);		/* Open directory */
 	if (hdir == INVALID_HANDLE_VALUE) 
     {
-		printf("Failed to open directory.\n");
+		wprintf(L"Failed to open directory.\n");
 	} 
     else 
     {
@@ -130,7 +130,7 @@ int maketree (void)
 
 
 
-int main (int argc, wchar_t* argv[])
+int wmain (int argc, wchar_t* argv[])
 {
 	UINT csz;
 	HANDLE wh;
@@ -164,13 +164,12 @@ int main (int argc, wchar_t* argv[])
 			
 		return 1;
 	}
-
-	/*strcpy*/(SrcPath,   argv[ai++]);
-    wcscpy(SrcPath,   argv[ai++]);
+	
+    wcscpy(SrcPath, argv[ai++]);
 	outfile         = argv[ai++];
 	RamDiskSize     = _wtoi(argv[ai++]) * 2;
 
-	csz = (argc >= 5) ? _wtoi/*atoi*/(argv[ai++]) : 512;
+	csz = (argc >= 5) ? _wtoi(argv[ai++]) : 512;
 
 	/* Create an FAT volume */
 	f_mount(&FatFs, L"", 0);
