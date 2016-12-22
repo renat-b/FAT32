@@ -1188,10 +1188,10 @@ FRESULT dir_next (      /* FR_OK:Succeeded, FR_NO_FILE:End of table, FR_DENIED:C
     UINT i;
 
     i = dp->index + 1;
-    if (!(i & 0xFFFF) || !dp->sect)    /* Report EOT when index has reached 65535 */
+    if ( !(i & 0xFFFF) || !dp->sect)        /* Report EOT when index has reached 65535 */
         return FR_NO_FILE;
 
-    if (!(i % (SS(dp->fs) / SZ_DIR)))	   /* Sector changed? */
+    if ( !(i % (SS(dp->fs) / SZ_DIR)))	   /* Sector changed? */
 	{ 
         dp->sect++;                        /* Next sector */
 
@@ -1598,7 +1598,8 @@ FRESULT dir_find (
 			{
 			    if (a == AM_LFN)             /* An LFN entry is found */
 				{
-			        if (dp->lfn) {
+			        if (dp->lfn) 
+					{
 			            if (c & LLE)         /* Is it start of LFN sequence? */
 						{
 			                sum = dir[LDIR_Chksum];
@@ -1611,10 +1612,12 @@ FRESULT dir_find (
 			    } 
 					else                     /* An SFN entry is found */
 					{
-					    if (!ord && sum == sum_sfn(dir))     /* LFN matched? */
+					    if (!ord && sum == sum_sfn(dir))							 /* LFN matched? */
 							break;
-					    if (!(dp->fn[NS] & NS_LOSS) && !mem_cmp(dir, dp->fn, 11))     /* SFN matched? */
+
+					    if (!(dp->fn[NS] & NS_LOSS) && !mem_cmp(dir, dp->fn, 11))    /* SFN matched? */
 							break;
+
 					    ord = 0xFF; dp->lfn_idx = 0xFFFF;    /* Reset LFN sequence */
 					}
 			}
@@ -3483,8 +3486,6 @@ FRESULT f_opendir (
 
     LEAVE_FF(fs, res);
 }
-
-
 
 
 /*-----------------------------------------------------------------------*/
