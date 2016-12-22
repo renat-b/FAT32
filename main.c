@@ -137,7 +137,7 @@ int wmain()
 	ret = f_mkdir(L"projects/one");
 
 	ret = f_opendir(&dr, L"projects/one");
-
+	f_closedir(&dr);
 }
 
 
