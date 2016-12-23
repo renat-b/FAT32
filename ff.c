@@ -917,8 +917,6 @@ DWORD get_fat (    /* 0xFFFFFFFF:Disk error, 1:Internal error, Else:Cluster stat
 }
 
 
-
-
 /*-----------------------------------------------------------------------*/
 /* FAT access - Change value of a FAT entry                              */
 /*-----------------------------------------------------------------------*/
