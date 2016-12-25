@@ -77,35 +77,35 @@ typedef char TCHAR;
 
 typedef struct 
 {
-	BYTE	fs_type;		/* FAT sub-type (0:Not mounted) */
-	BYTE	drv;			/* Physical drive number */
-	BYTE	csize;			/* Sectors per cluster (1,2,4...128) */
-	BYTE	n_fats;			/* Number of FAT copies (1 or 2) */
-	BYTE	wflag;			/* win[] flag (b0:dirty) */
-	BYTE	fsi_flag;		/* FSINFO flags (b7:disabled, b0:dirty) */
-	WORD	id;				/* File system mount ID */
-	WORD	n_rootdir;		/* Number of root directory entries (FAT12/16) */
+	BYTE	fs_type;					/* FAT sub-type (0:Not mounted) */
+	BYTE	drv;						/* Physical drive number */
+	BYTE	sector_per_claster;			/* Sectors per cluster (1,2,4...128) */
+	BYTE	n_fats;						/* Number of FAT copies (1 or 2) */
+	BYTE	wflag;						/* win[] flag (b0:dirty) */
+	BYTE	fsi_flag;					/* FSINFO flags (b7:disabled, b0:dirty) */
+	WORD	id;							/* File system mount ID */
+	WORD	n_rootdir;					/* Number of root directory entries (FAT12/16) */
 #if _MAX_SS != _MIN_SS
-	WORD	ssize;			/* Bytes per sector (512, 1024, 2048 or 4096) */
+	WORD	ssize;						/* Bytes per sector (512, 1024, 2048 or 4096) */
 #endif
 #if _FS_REENTRANT
-	_SYNC_t	sobj;			/* Identifier of sync object */
+	_SYNC_t	sobj;						/* Identifier of sync object */
 #endif
 #if !_FS_READONLY
-	DWORD	last_clust;		/* Last allocated cluster */
-	DWORD	free_clust;		/* Number of free clusters */
+	DWORD	last_clust;					/* Last allocated cluster */
+	DWORD	free_clust;					/* Number of free clusters */
 #endif
 #if _FS_RPATH
-	DWORD	cdir;			/* Current directory start cluster (0:root) */
+	DWORD	cdir;						/* Current directory start cluster (0:root) */
 #endif
-	DWORD	n_fatent;		/* Number of FAT entries, = number of clusters + 2 */
-	DWORD	fsize;			/* Sectors per FAT */
-	DWORD	volbase;		/* Volume start sector */
-	DWORD	fatbase;		/* FAT start sector */
-	DWORD	dirbase;		/* Root directory start sector (FAT32:Cluster#) */
-	DWORD	database;		/* Data start sector */
-	DWORD	winsect;		/* Current sector appearing in the win[] */
-	BYTE	win[_MAX_SS];	/* Disk access window for Directory, FAT (and file data at tiny cfg) */
+	DWORD	n_fatent;					/* Number of FAT entries, = number of clusters + 2 */
+	DWORD	sector_per_fat;			    /* Sectors per FAT */
+	DWORD	vol_base_sector;			/* Volume start sector */
+	DWORD	fat_base_sector;			/* FAT start sector */
+	DWORD	dir_base_sector;			/* Root directory start sector (FAT32:Cluster#) */
+	DWORD	data_base_sector;			/* Data start sector */
+	DWORD	winsect;					/* Current sector appearing in the win[] */
+	BYTE	win[_MAX_SS];				/* Disk access window for Directory, FAT (and file data at tiny cfg) */
 } FATFS;
 
 
@@ -119,9 +119,9 @@ typedef struct
 	BYTE	flag;			/* Status flags */
 	BYTE	err;			/* Abort flag (error code) */
 	DWORD	fptr;			/* File read/write pointer (Zeroed on file open) */
-	DWORD	fsize;			/* File size */
-	DWORD	sclust;			/* File start cluster (0:no cluster chain, always 0 when fsize is 0) */
-	DWORD	clust;			/* Current cluster of fpter (not valid when fprt is 0) */
+	DWORD	sector_per_fat;			/* File size */
+	DWORD	start_clust;			/* File start cluster (0:no cluster chain, always 0 when fsize is 0) */
+	DWORD	cur_clust;			/* Current cluster of fpter (not valid when fprt is 0) */
 	DWORD	dsect;			/* Sector number appearing in buf[] (0:invalid) */
 #if !_FS_READONLY
 	DWORD	dir_sect;		/* Sector number containing the directory entry */
@@ -147,9 +147,9 @@ typedef struct
 	FATFS*	fs;				/* Pointer to the owner file system object (**do not change order**) */
 	WORD	id;				/* Owner file system mount ID (**do not change order**) */
 	WORD	index;			/* Current read/write index number */
-	DWORD	sclust;			/* Table start cluster (0:Root dir) */
-	DWORD	clust;			/* Current cluster */
-	DWORD	sect;			/* Current sector */
+	DWORD	start_clust;	/* Table start cluster (0:Root dir) */
+	DWORD	cur_clust;		/* Current cluster */
+	DWORD	cur_sect;		/* Current sector */
 	BYTE*	dir;			/* Pointer to the current SFN entry in the win[] */
 	BYTE*	fn;				/* Pointer to the SFN (in/out) {file[8],ext[3],status[1]} */
 #if _FS_LOCK
@@ -167,7 +167,7 @@ typedef struct
 
 typedef struct 
 {
-	DWORD	fsize;			/* File size */
+	DWORD	sector_per_fat;			/* File size */
 	WORD	fdate;			/* Last modified date */
 	WORD	ftime;			/* Last modified time */
 	BYTE	fattrib;		/* Attribute */

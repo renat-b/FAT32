@@ -127,7 +127,7 @@ int wmain()
 {
 	FRESULT ret;
 	DIR     dr = {0};
-	RamDiskSize = 65526U+16*1024;
+	RamDiskSize = 65526+16*1024;
 	
 	ret = f_mount(&FatFs, L"", 0);
 
