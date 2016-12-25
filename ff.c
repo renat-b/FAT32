@@ -1164,7 +1164,7 @@ FRESULT dir_set_directory_index (
     DWORD clst, sect;
     UINT  ic;
 
-    dir->index = (WORD)idx;						  /* Current index */
+    dir->index = (WORD)idx;						      /* Current index */
     clst = dir->start_clust;						  /* Table start cluster (0:root) */
 
     if (clst == 1 || clst >= dir->fs->n_fatent)    /* Check start cluster range */
@@ -1215,31 +1215,31 @@ FRESULT dir_set_directory_index (
 
 static
 FRESULT dir_next (      /* FR_OK:Succeeded, FR_NO_FILE:End of table, FR_DENIED:Could not stretch */
-    DIR* dp,            /* Pointer to the directory object										 */
+    DIR* dir,           /* Pointer to the directory object										 */
     int stretch         /* 0: Do not stretch table, 1: Stretch table if needed					 */
 )
 {
     DWORD clst;
-    UINT i;
+    UINT  i;
 
-    i = dp->index + 1;
-    if ( !(i & 0xFFFF) || !dp->cur_sect)        /* Report EOT when index has reached 65535 */
+    i = dir->index + 1;
+    if ( !(i & 0xFFFF) || !dir->cur_sect)        /* Report EOT when index has reached 65535 */
         return FR_NO_FILE;
 
-    if ( !(i % (SS(dp->fs) / SZ_DIR)))	   /* Sector changed? */
+    if ( !(i % (SS(dir->fs) / SZ_DIR)))	        /* Sector changed? */
 	{ 
-        dp->cur_sect++;                        /* Next sector */
+        dir->cur_sect++;                        /* Next sector */
 
-        if (!dp->cur_clust) 
-		{        /* Static table */
-            if (i >= dp->fs->n_rootdir)    /* Report EOT if it reached end of static table */
+        if ( !dir->cur_clust)					/* Static table */
+		{       
+            if (i >= dir->fs->n_rootdir)    /* Report EOT if it reached end of static table */
                 return FR_NO_FILE;
         }
         else 
 		{                    /* Dynamic table */
-            if (((i / (SS(dp->fs) / SZ_DIR)) & (dp->fs->sector_per_claster - 1)) == 0) 
+            if (((i / (SS(dir->fs) / SZ_DIR)) & (dir->fs->sector_per_claster - 1)) == 0) 
 			{    /* Cluster changed? */
-                clst = get_fat(dp->fs, dp->cur_clust);                /* Get next cluster */
+                clst = get_fat(dir->fs, dir->cur_clust);                /* Get next cluster */
 
                 if (clst <= 1) 
 					return FR_INT_ERR;
@@ -1247,7 +1247,7 @@ FRESULT dir_next (      /* FR_OK:Succeeded, FR_NO_FILE:End of table, FR_DENIED:C
                 if (clst == 0xFFFFFFFF) 
 					return FR_DISK_ERR;
 
-                if (clst >= dp->fs->n_fatent) 
+                if (clst >= dir->fs->n_fatent) 
 				{                    /* If it reached end of dynamic table, */
 #if !_FS_READONLY
                     UINT c;
@@ -1255,7 +1255,7 @@ FRESULT dir_next (      /* FR_OK:Succeeded, FR_NO_FILE:End of table, FR_DENIED:C
                     if (!stretch) 
 						return FR_NO_FILE;							/* If do not stretch, report EOT */
 
-                    clst = create_chain(dp->fs, dp->cur_clust);         /* Stretch cluster chain */
+                    clst = create_chain(dir->fs, dir->cur_clust);   /* Stretch cluster chain */
 
                     if (clst == 0) 
 						return FR_DENIED;                           /* No free cluster */
@@ -1267,33 +1267,33 @@ FRESULT dir_next (      /* FR_OK:Succeeded, FR_NO_FILE:End of table, FR_DENIED:C
 						return FR_DISK_ERR;
 
                     /* Clean-up stretched table */
-                    if (sync_window(dp->fs)) 
+                    if (sync_window(dir->fs)) 
 						return FR_DISK_ERR;					      /* Flush disk access window */
 
-                    mem_set(dp->fs->win, 0, SS(dp->fs));          /* Clear window buffer */
-                    dp->fs->winsect = clust2sect(dp->fs, clst);   /* Cluster start sector */
-                    for (c = 0; c < dp->fs->sector_per_claster; c++)			  /* Fill the new cluster with 0 */
+                    mem_set(dir->fs->win, 0, SS(dir->fs));          /* Clear window buffer */
+                    dir->fs->winsect = clust2sect(dir->fs, clst);   /* Cluster start sector */
+                    for (c = 0; c < dir->fs->sector_per_claster; c++)			  /* Fill the new cluster with 0 */
 					{
-                        dp->fs->wflag = 1;
-                        if (sync_window(dp->fs)) 
+                        dir->fs->wflag = 1;
+                        if (sync_window(dir->fs)) 
 							return FR_DISK_ERR;
 
-                        dp->fs->winsect++;
+                        dir->fs->winsect++;
                     }
-                    dp->fs->winsect -= c;                        /* Rewind window offset */
+                    dir->fs->winsect -= c;                        /* Rewind window offset */
 #else
                     if (!stretch) return FR_NO_FILE;            /* If do not stretch, report EOT (this is to suppress warning) */
                     return FR_NO_FILE;                            /* Report EOT */
 #endif
                 }
-                dp->cur_clust = clst;                /* Initialize data for new cluster */
-                dp->cur_sect  = clust2sect(dp->fs, clst);
+                dir->cur_clust = clst;                /* Initialize data for new cluster */
+                dir->cur_sect  = clust2sect(dir->fs, clst);
             }
         }
     }
 
-    dp->index = (WORD)i;    /* Current index */
-    dp->dir = dp->fs->win + (i % (SS(dp->fs) / SZ_DIR)) * SZ_DIR;    /* Current entry in the window */
+    dir->index = (WORD)i;    /* Current index */
+    dir->dir = dir->fs->win + (i % (SS(dir->fs) / SZ_DIR)) * SZ_DIR;    /* Current entry in the window */
 
     return FR_OK;
 }
