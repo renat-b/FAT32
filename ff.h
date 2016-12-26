@@ -104,7 +104,7 @@ typedef struct
 	DWORD	fat_base_sector;			/* FAT start sector */
 	DWORD	dir_base_sector;			/* Root directory start sector (FAT32:Cluster#) */
 	DWORD	data_base_sector;			/* Data start sector */
-	DWORD	winsect;					/* Current sector appearing in the win[] */
+	DWORD	win_sect;					/* Current sector appearing in the win[] */
 	BYTE	win[_MAX_SS];				/* Disk access window for Directory, FAT (and file data at tiny cfg) */
 } FATFS;
 
