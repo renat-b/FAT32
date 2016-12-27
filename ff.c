@@ -1,125 +1,6 @@
-/*----------------------------------------------------------------------------/
-/  FatFs - FAT file system module  R0.10b                (C)ChaN, 2014
-/-----------------------------------------------------------------------------/
-/ FatFs module is a generic FAT file system module for small embedded systems.
-/ This is a free software that opened for education, research and commercial
-/ developments under license policy of following terms.
-/
-/  Copyright (C) 2014, ChaN, all right reserved.
-/
-/ * The FatFs module is a free software and there is NO WARRANTY.
-/ * No restriction on use. You can use, modify and redistribute it for
-/   personal, non-profit or commercial products UNDER YOUR RESPONSIBILITY.
-/ * Redistributions of source code must retain the above copyright notice.
-/
-/-----------------------------------------------------------------------------/
-/ Feb 26,'06 R0.00  Prototype.
-/
-/ Apr 29,'06 R0.01  First stable version.
-/
-/ Jun 01,'06 R0.02  Added FAT12 support.
-/                   Removed unbuffered mode.
-/                   Fixed a problem on small (<32M) partition.
-/ Jun 10,'06 R0.02a Added a configuration option (_FS_MINIMUM).
-/
-/ Sep 22,'06 R0.03  Added f_rename().
-/                   Changed option _FS_MINIMUM to _FS_MINIMIZE.
-/ Dec 11,'06 R0.03a Improved cluster scan algorithm to write files fast.
-/                   Fixed f_mkdir() creates incorrect directory on FAT32.
-/
-/ Feb 04,'07 R0.04  Supported multiple drive system.
-/                   Changed some interfaces for multiple drive system.
-/                   Changed f_mountdrv() to f_mount().
-/                   Added f_mkfs().
-/ Apr 01,'07 R0.04a Supported multiple partitions on a physical drive.
-/                   Added a capability of extending file size to f_lseek().
-/                   Added minimization level 3.
-/                   Fixed an endian sensitive code in f_mkfs().
-/ May 05,'07 R0.04b Added a configuration option _USE_NTFLAG.
-/                   Added FSINFO support.
-/                   Fixed DBCS name can result FR_INVALID_NAME.
-/                   Fixed short seek (<= csize) collapses the file object.
-/
-/ Aug 25,'07 R0.05  Changed arguments of f_read(), f_write() and f_mkfs().
-/                   Fixed f_mkfs() on FAT32 creates incorrect FSINFO.
-/                   Fixed f_mkdir() on FAT32 creates incorrect direetory.
-/ Feb 03,'08 R0.05a Added f_truncate() and f_utime().
-/                   Fixed off by one error at FAT sub-type determination.
-/                   Fixed btr in f_read() can be mistruncated.
-/                   Fixed cached sector is not flushed when create and close without write.
-/
-/ Apr 01,'08 R0.06  Added fputc(), fputs(), fprintf() and fgets().
-/                   Improved performance of f_lseek() on moving to the same or following cluster.
-/
-/ Apr 01,'09 R0.07  Merged Tiny-FatFs as a configuration option. (_FS_TINY)
-/                   Added long file name feature.
-/                   Added multiple code page feature.
-/                   Added re-entrancy for multitask operation.
-/                   Added auto cluster size selection to f_mkfs().
-/                   Added rewind option to f_readdir().
-/                   Changed result code of critical errors.
-/                   Renamed string functions to avoid name collision.
-/ Apr 14,'09 R0.07a Separated out OS dependent code on reentrant cfg.
-/                   Added multiple sector size feature.
-/ Jun 21,'09 R0.07c Fixed f_unlink() can return FR_OK on error.
-/                   Fixed wrong cache control in f_lseek().
-/                   Added relative path feature.
-/                   Added f_chdir() and f_chdrive().
-/                   Added proper case conversion to extended character.
-/ Nov 03,'09 R0.07e Separated out configuration options from ff.h to ffconf.h.
-/                   Fixed f_unlink() fails to remove a sub-directory on _FS_RPATH.
-/                   Fixed name matching error on the 13 character boundary.
-/                   Added a configuration option, _LFN_UNICODE.
-/                   Changed f_readdir() to return the SFN with always upper case on non-LFN cfg.
-/
-/ May 15,'10 R0.08  Added a memory configuration option. (_USE_LFN = 3)
-/                   Added file lock feature. (_FS_SHARE)
-/                   Added fast seek feature. (_USE_FASTSEEK)
-/                   Changed some types on the API, XCHAR->TCHAR.
-/                   Changed .fname in the FILINFO structure on Unicode cfg.
-/                   String functions support UTF-8 encoding files on Unicode cfg.
-/ Aug 16,'10 R0.08a Added f_getcwd().
-/                   Added sector erase feature. (_USE_ERASE)
-/                   Moved file lock semaphore table from fs object to the bss.
-/                   Fixed a wrong directory entry is created on non-LFN cfg when the given name contains ';'.
-/                   Fixed f_mkfs() creates wrong FAT32 volume.
-/ Jan 15,'11 R0.08b Fast seek feature is also applied to f_read() and f_write().
-/                   f_lseek() reports required table size on creating CLMP.
-/                   Extended format syntax of f_printf().
-/                   Ignores duplicated directory separators in given path name.
-/
-/ Sep 06,'11 R0.09  f_mkfs() supports multiple partition to complete the multiple partition feature.
-/                   Added f_fdisk().
-/ Aug 27,'12 R0.09a Changed f_open() and f_opendir() reject null object pointer to avoid crash.
-/                   Changed option name _FS_SHARE to _FS_LOCK.
-/                   Fixed assertion failure due to OS/2 EA on FAT12/16 volume.
-/ Jan 24,'13 R0.09b Added f_setlabel() and f_getlabel().
-/
-/ Oct 02,'13 R0.10  Added selection of character encoding on the file. (_STRF_ENCODE)
-/                   Added f_closedir().
-/                   Added forced full FAT scan for f_getfree(). (_FS_NOFSINFO)
-/                   Added forced mount feature with changes of f_mount().
-/                   Improved behavior of volume auto detection.
-/                   Improved write throughput of f_puts() and f_printf().
-/                   Changed argument of f_chdrive(), f_mkfs(), disk_read() and disk_write().
-/                   Fixed f_write() can be truncated when the file size is close to 4GB.
-/                   Fixed f_open(), f_mkdir() and f_setlabel() can return incorrect error code.
-/ Jan 15,'14 R0.10a Added arbitrary strings as drive number in the path name. (_STR_VOLUME_ID)
-/                   Added a configuration option of minimum sector size. (_MIN_SS)
-/                   2nd argument of f_rename() can have a drive number and it will be ignored.
-/                   Fixed f_mount() with forced mount fails when drive number is >= 1.
-/                   Fixed f_close() invalidates the file object without volume lock.
-/                   Fixed f_closedir() returns but the volume lock is left acquired.
-/                   Fixed creation of an entry with LFN fails on too many SFN collisions.
-/ May 19,'14 R0.10b Fixed a hard error in the disk I/O layer can collapse the directory entry.
-/                   Fixed LFN entry is not deleted on delete/rename an object with lossy converted SFN.
-/---------------------------------------------------------------------------*/
-
 #include "ff.h"            /* Declarations of FatFs API */
 #include "diskio.h"        /* Declarations of disk I/O functions */
-
-
-
+#include "Shlwapi.h"
 
 /*--------------------------------------------------------------------------
 
@@ -771,7 +652,7 @@ FRESULT sync_window (
         fs->wflag = 0;
         if (wsect - fs->fat_base_sector < fs->sector_per_fat)        /* Is it in the FAT area? */
         {        
-            for (nf = fs->n_fats; nf >= 2; nf--)    /* Reflect the change to all FAT copies */
+            for (nf = fs->n_fats; nf >= 2; nf--)					 /* Reflect the change to all FAT copies */
             {    
                 wsect += fs->sector_per_fat;
                 disk_write(fs->drv, fs->win, wsect, 1);
@@ -803,9 +684,6 @@ FRESULT move_window (
 
     return FR_OK;
 }
-
-
-
 
 /*-----------------------------------------------------------------------*/
 /* Synchronize file system and strage device                             */
@@ -936,7 +814,9 @@ FRESULT put_fat (
 	{
         res = FR_INT_ERR;
 
-    } else {
+    } 
+    else 
+    {
         switch (fs->fs_type) 
 		{
 			case FS_FAT12 :
@@ -2354,62 +2234,62 @@ FRESULT follow_path (    /* FR_OK(0): successful, !=0: error code */
 /* Get logical drive number from path name                               */
 /*-----------------------------------------------------------------------*/
 
-static
-int get_logical_driver_number (        /* Returns logical drive number (-1:invalid drive) */
-    const TCHAR** path				   /* Pointer to pointer to the path name			  */
-)
+static int get_logical_driver_number ()          /* Returns logical drive number (-1:invalid drive) */
 {
-    const TCHAR *tp, *tt;
-    UINT		 i;
-    int			 vol = -1;
 
-    if (*path)    /* If the pointer is not a null */ 
-    {
-        for (tt = *path; (UINT)*tt >= (_USE_LFN ? ' ' : '!') && *tt != ':'; tt++) ;       /* Find ':' in the path */
+    return 0;
 
-        if (*tt == ':')  /* If a ':' is exist in the path name */
-        {
-            tp = *path;
-            i  = *tp++ - '0'; 
-            if (i < 10 && tp == tt)     /* Is there a numeric drive id? */
-            {
-                if (i < _VOLUMES)        /* If a drive id is found, get the value and strip it */ 
-                {
-                    vol = (int)i;
-                    *path = ++tt;
-                }
-            } 
-            else       /* No numeric drive number */
-            {
-#if _STR_VOLUME_ID        /* Find string drive id */
-                static const char* const str[] = {_VOLUME_STRS};
-                const char *sp;
-                char c;
-                TCHAR tc;
-
-                i = 0; tt++;
-                do {
-                    sp = str[i]; tp = *path;
-                    do {    /* Compare a string drive id with path name */
-                        c = *sp++; tc = *tp++;
-                        if (IsLower(tc)) tc -= 0x20;
-                    } while (c && (TCHAR)c == tc);
-                } while ((c || tp != tt) && ++i < _VOLUMES);    /* Repeat for each id until pattern match */
-                if (i < _VOLUMES) {    /* If a drive id is found, get the value and strip it */
-                    vol = (int)i;
-                    *path = tt;
-                }
-#endif
-            }
-            return vol;
-        }
-#if _FS_RPATH && _VOLUMES >= 2
-        vol = CurrVol;    /* Current drive */
-#else
-        vol = 0;        /* Drive 0 */
-#endif
-    }
-    return vol;
+//    const TCHAR *tp, *tt;
+//    UINT		 i;
+//    int			 vol = -1;
+//
+//    if (*path)    /* If the pointer is not a null */ 
+//    {
+//        for (tt = *path; (UINT)*tt >= (_USE_LFN ? ' ' : '!') && *tt != ':'; tt++) ;       /* Find ':' in the path */
+//
+//        if (*tt == ':')  /* If a ':' is exist in the path name */
+//        {
+//            tp = *path;
+//            i  = *tp++ - '0'; 
+//            if (i < 10 && tp == tt)     /* Is there a numeric drive id? */
+//            {
+//                if (i < _VOLUMES)        /* If a drive id is found, get the value and strip it */ 
+//                {
+//                    vol = (int)i;
+//                    *path = ++tt;
+//                }
+//            } 
+//            else       /* No numeric drive number */
+//            {
+//#if _STR_VOLUME_ID        /* Find string drive id */
+//                static const char* const str[] = {_VOLUME_STRS};
+//                const char *sp;
+//                char c;
+//                TCHAR tc;
+//
+//                i = 0; tt++;
+//                do {
+//                    sp = str[i]; tp = *path;
+//                    do {    /* Compare a string drive id with path name */
+//                        c = *sp++; tc = *tp++;
+//                        if (IsLower(tc)) tc -= 0x20;
+//                    } while (c && (TCHAR)c == tc);
+//                } while ((c || tp != tt) && ++i < _VOLUMES);    /* Repeat for each id until pattern match */
+//                if (i < _VOLUMES) {    /* If a drive id is found, get the value and strip it */
+//                    vol = (int)i;
+//                    *path = tt;
+//                }
+//#endif
+//            }
+//            return vol;
+//        }
+//#if _FS_RPATH && _VOLUMES >= 2
+//        vol = CurrVol;    /* Current drive */
+//#else
+//        vol = 0;        /* Drive 0 */
+//#endif
+//    }
+//    return vol;
 }
 
 
@@ -2454,14 +2334,14 @@ FRESULT find_volume (      /* FR_OK(0): successful, !=0: any error occurred     
 {
     BYTE     fmt;
     int      vol;
-    DSTATUS  stat;
+    DSTATUS  stat = 0;
     DWORD    bsect, fasize, tsect, sysect, nclst, szbfat;
     WORD     nrsv;
     FATFS   *fs;
 
     /* Get logical drive number from the path name */
     *rfs = 0;
-    vol  = get_logical_driver_number(path);
+    vol  = get_logical_driver_number();
     if (vol < 0) 
         return FR_INVALID_DRIVE;
 
@@ -2490,7 +2370,6 @@ FRESULT find_volume (      /* FR_OK(0): successful, !=0: any error occurred     
 
     fs->fs_type = 0;                     /* Clear the file system object */
     fs->drv = LD2PD(vol);                /* Bind the logical drive and a physical drive */
-    stat = disk_initialize(fs->drv);     /* Initialize the physical drive */
 
     if (stat & STA_NOINIT)               /* Check if the initialization succeeded */
         return FR_NOT_READY;             /* Failed to initialize due to no medium or hard error */
@@ -2584,12 +2463,15 @@ FRESULT find_volume (      /* FR_OK(0): successful, !=0: any error occurred     
     fs->vol_base_sector  = bsect;                         /* Volume start sector */
     fs->fat_base_sector  = bsect + nrsv;                  /* FAT start sector */
     fs->data_base_sector = bsect + sysect;                /* Data start sector */
-    if (fmt == FS_FAT32)  {    
+    if (fmt == FS_FAT32)  
+    {    
         if (fs->n_rootdir)                                /* (BPB_RootEntCnt must be 0) */
             return FR_NO_FILESYSTEM;                    
         fs->dir_base_sector = LD_DWORD(fs->win+BPB_RootClus);     /* Root directory start cluster */
         szbfat = fs->n_fatent * 4;                        /* (Needed FAT size) */
-    } else   {
+    } 
+    else   
+    {
         if (!fs->n_rootdir)    
             return FR_NO_FILESYSTEM;                      /* (BPB_RootEntCnt must not be 0) */
 
@@ -2687,7 +2569,7 @@ FRESULT f_mount (
     FRESULT res;
     const TCHAR *rp = path;
 
-    vol = get_logical_driver_number(&rp);
+    vol = get_logical_driver_number();
     if (vol < 0) 
         return FR_INVALID_DRIVE;
     cfs = FatFs[vol];                    /* Pointer to fs object */
@@ -2703,10 +2585,12 @@ FRESULT f_mount (
         cfs->fs_type = 0;                /* Clear old fs object */
     }
 
-    if (fs) {
-        fs->fs_type = 0;                /* Clear new fs object */
-#if _FS_REENTRANT                        /* Create sync object for the new volume */
-        if (!ff_cre_syncobj((BYTE)vol, &fs->sobj)) return FR_INT_ERR;
+    if (fs) 
+    {
+        fs->fs_type = 0;                /* Clear new fs object                   */
+#if _FS_REENTRANT                       /* Create sync object for the new volume */
+        if (!ff_cre_syncobj((BYTE)vol, &fs->sobj)) 
+            return FR_INT_ERR;
 #endif
     }
     FatFs[vol] = fs;                    /* Register new fs object */
@@ -2714,10 +2598,16 @@ FRESULT f_mount (
     if (!fs || opt != 1)                /* Do not mount now, it will be mounted later */
         return FR_OK;    
 
-    res = find_volume(&fs, &path, 0);    /* Force mounted the volume */
+    res = find_volume(&fs, NULL, 0);    /* Force mounted the volume */
     LEAVE_FF(fs, res);
 }
 
+
+FRESULT f_unmount(FATFS* fs)
+{
+    disk_shutdown();
+    return FR_OK;
+}
 
 /*-----------------------------------------------------------------------*/
 /* Open or Create a File                                                 */
@@ -2902,18 +2792,23 @@ FRESULT f_read (
         LEAVE_FF(fp->fs, (FRESULT)fp->err);
     if (!(fp->flag & FA_READ))                      /* Check access mode */
         LEAVE_FF(fp->fs, FR_DENIED);
+
     remain = fp->sector_per_fat - fp->fptr;
     if (btr > remain) 
         btr = (UINT)remain;                         /* Truncate btr by remaining bytes */
 
     /* Repeat until all data read */
-    for ( ;  btr; rbuff += rcnt, fp->fptr += rcnt, *br += rcnt, btr -= rcnt)  {
-        if ((fp->fptr % SS(fp->fs)) == 0)   {       /* On the sector boundary? */
+    for ( ;  btr; rbuff += rcnt, fp->fptr += rcnt, *br += rcnt, btr -= rcnt)  
+    {
+        if ((fp->fptr % SS(fp->fs)) == 0)           /* On the sector boundary? */
+        {
             csect = (BYTE)(fp->fptr / SS(fp->fs) & (fp->fs->sector_per_claster - 1));    /* Sector offset in the cluster */
             if ( !csect) {                          /* On the cluster boundary? */
-                if (fp->fptr == 0) {                /* On the top of the file? */
-                    clst = fp->start_clust;              /* Follow from the origin */
-                } else  {                           /* Middle or end of the file */
+                if (fp->fptr == 0) {                /* On the top of the file?  */
+                    clst = fp->start_clust;         /* Follow from the origin   */
+                } 
+                else  
+                {                                   /* Middle or end of the file */
 #if _USE_FASTSEEK
                     if (fp->cltbl)
                         clst = clmt_clust(fp, fp->fptr);      /* Get cluster# from the CLMT */
@@ -2923,15 +2818,18 @@ FRESULT f_read (
                 }
                 if (clst < 2) 
                     ABORT(fp->fs, FR_INT_ERR);
+
                 if (clst == 0xFFFFFFFF) 
                     ABORT(fp->fs, FR_DISK_ERR);
+
                 fp->cur_clust = clst;                       /* Update current cluster */
             }
             sect = clust2sect(fp->fs, fp->cur_clust);       /* Get current sector */
             if (!sect) ABORT(fp->fs, FR_INT_ERR);
             sect += csect;
             cc = btr / SS(fp->fs);                      /* When remaining bytes >= sector size, */
-            if (cc) {                                   /* Read maximum contiguous sectors directly */
+            if (cc)                                     /* Read maximum contiguous sectors directly */
+            {                                   
                 if (csect + cc > fp->fs->sector_per_claster)         /* Clip at cluster boundary */
                     cc = fp->fs->sector_per_claster - csect;
 
@@ -3204,7 +3102,7 @@ FRESULT f_chdrive (
     int vol;
 
 
-    vol = get_logical_driver_number(&path);
+    vol = get_logical_driver_number();
     if (vol < 0) return FR_INVALID_DRIVE;
 
     CurrVol = (BYTE)vol;
@@ -4093,7 +3991,7 @@ FRESULT f_rename (
             } else {
                 mem_cpy(buf, djo.dir+DIR_Attr, 21);        /* Save the object information except name */
                 mem_cpy(&djn, &djo, sizeof (DIR));        /* Duplicate the directory object */
-                if (get_logical_driver_number(&path_new) >= 0)        /* Snip drive number off and ignore it */
+                if (get_logical_driver_number() >= 0)        /* Snip drive number off and ignore it */
                     res = follow_path(&djn, path_new);    /* and check if new object is exist */
                 else
                     res = FR_INVALID_DRIVE;
@@ -4371,10 +4269,10 @@ FRESULT f_forward (
 #define N_FATS        1        /* Number of FAT copies (1 or 2) */
 
 
-FRESULT f_mkfs (
-    const TCHAR* path,    /* Logical drive number */
+FRESULT f_create_fs (
+    LPCWSTR path,         /* Path FAT system                  */
     BYTE sfd,             /* Partitioning rule 0:FDISK, 1:SFD */
-    UINT au               /* Allocation unit [bytes] */
+    UINT au               /* Allocation unit [bytes]          */
 )
 {
     static const WORD vst[] = { 1024,   512,  256,  128,   64,    32,   16,    8,    4,    2,   0};
@@ -4390,7 +4288,7 @@ FRESULT f_mkfs (
     DSTATUS stat;
 
     /* Check mounted drive and clear work area */
-    vol = get_logical_driver_number(&path);
+    vol = get_logical_driver_number();
     if (vol < 0) 
         return FR_INVALID_DRIVE;
 
@@ -4405,11 +4303,11 @@ FRESULT f_mkfs (
         return FR_NOT_ENABLED;
 
     fs->fs_type = 0;
-    pdrv = LD2PD(vol);    /* Physical drive */
-    part = LD2PT(vol);    /* Partition (0:auto detect, 1-4:get from partition table)*/
+    pdrv = LD2PD(vol);    /* Physical drive                                          */
+    part = LD2PT(vol);    /* Partition (0:auto detect, 1-4:get from partition table) */
 
-    /* Get disk statics */
-    stat = disk_initialize(pdrv);
+    /* get disk statics */
+    stat = disk_initialize(path);
     if (stat & STA_NOINIT)  
 		return FR_NOT_READY;
 
@@ -4582,28 +4480,28 @@ FRESULT f_mkfs (
         ST_DWORD(tbl+BPB_TotSec32, n_vol);
     }
 
-    tbl[BPB_Media] = md;                    /* Media descriptor */
+    tbl[BPB_Media] = md;                       /* Media descriptor */
     ST_WORD(tbl+BPB_SecPerTrk, 63);            /* Number of sectors per track */
     ST_WORD(tbl+BPB_NumHeads, 255);            /* Number of heads */
-    ST_DWORD(tbl+BPB_HiddSec, b_vol);        /* Hidden sectors */
-    n = get_fattime();                        /* Use current time as VSN */
+    ST_DWORD(tbl+BPB_HiddSec, b_vol);          /* Hidden sectors */
+    n = get_fattime();                         /* Use current time as VSN */
     if (fmt == FS_FAT32) 
     {
-        ST_DWORD(tbl+BS_VolID32, n);        /* VSN */
-        ST_DWORD(tbl+BPB_FATSz32, n_fat);    /* Number of sectors per FAT */
+        ST_DWORD(tbl+BS_VolID32, n);          /* VSN */
+        ST_DWORD(tbl+BPB_FATSz32, n_fat);     /* Number of sectors per FAT */
         ST_DWORD(tbl+BPB_RootClus, 2);        /* Root directory start cluster (2) */
-        ST_WORD(tbl+BPB_FSInfo, 1);            /* FSINFO record offset (VBR+1) */
+        ST_WORD(tbl+BPB_FSInfo, 1);           /* FSINFO record offset (VBR+1) */
         ST_WORD(tbl+BPB_BkBootSec, 6);        /* Backup boot record offset (VBR+6) */
-        tbl[BS_DrvNum32] = 0x80;            /* Drive number */
-        tbl[BS_BootSig32] = 0x29;            /* Extended boot signature */
+        tbl[BS_DrvNum32] = 0x80;              /* Drive number */
+        tbl[BS_BootSig32] = 0x29;             /* Extended boot signature */
         mem_cpy(tbl+BS_VolLab32, "NO NAME    " "FAT32   ", 19);    /* Volume label, FAT signature */
     } 
     else 
     {
         ST_DWORD(tbl+BS_VolID, n);            /* VSN */
-        ST_WORD(tbl+BPB_FATSz16, n_fat);    /* Number of sectors per FAT */
+        ST_WORD(tbl+BPB_FATSz16, n_fat);      /* Number of sectors per FAT */
         tbl[BS_DrvNum] = 0x80;                /* Drive number */
-        tbl[BS_BootSig] = 0x29;                /* Extended boot signature */
+        tbl[BS_BootSig] = 0x29;               /* Extended boot signature */
         mem_cpy(tbl+BS_VolLab, "NO NAME    " "FAT     ", 19);    /* Volume label, FAT signature */
     }
 
@@ -4615,10 +4513,10 @@ FRESULT f_mkfs (
 
     /* Initialize FAT area */
     wsect = b_fat;
-    for (i = 0; i < N_FATS; i++)             /* Initialize each FAT copy */
+    for (i = 0; i < N_FATS; i++)             /* Initialize each FAT copy  */
     {
-        mem_set(tbl, 0, SS(fs));            /* 1st sector of the FAT  */
-        n = md;                                /* Media descriptor byte */
+        mem_set(tbl, 0, SS(fs));             /* 1st sector of the FAT     */
+        n = md;                              /* Media descriptor byte     */
         if (fmt != FS_FAT32) 
         {
             n |= (fmt == FS_FAT12) ? 0x00FFFF00 : 0xFFFFFF00;
@@ -4673,6 +4571,39 @@ FRESULT f_mkfs (
     }
 
     return (disk_ioctl(pdrv, CTRL_SYNC, 0) == RES_OK) ? FR_OK : FR_DISK_ERR;
+}
+
+FRESULT f_open_fs(LPCWSTR path)
+{
+    FRESULT err = FR_DISK_ERR;
+    DSTATUS stat;
+    FATFS  *cfs;
+    int     vol;
+    FRESULT res;
+
+    if ( !path)
+        return err;
+
+    if (PathFileExistsW(path) == FALSE)
+        return err;
+
+    stat = disk_initialize(path);
+
+    if (stat & STA_NOINIT)
+        return FR_NOT_READY;
+
+    if (stat & STA_PROTECT)
+        return FR_WRITE_PROTECTED;
+
+    vol = get_logical_driver_number();
+    if (vol < 0)
+        return FR_INVALID_DRIVE;
+
+    cfs = FatFs[vol];                    /* Pointer to fs object */
+
+    res = find_volume(&cfs, NULL, 0);    /* Force mounted the volume */
+
+    return FR_OK;
 }
 
 

@@ -1,19 +1,3 @@
-/*---------------------------------------------------------------------------/
-/  FatFs - FAT file system module include file  R0.10b    (C)ChaN, 2014
-/----------------------------------------------------------------------------/
-/ FatFs module is a generic FAT file system module for small embedded systems.
-/ This is a free software that opened for education, research and commercial
-/ developments under license policy of following terms.
-/
-/  Copyright (C) 2014, ChaN, all right reserved.
-/
-/ * The FatFs module is a free software and there is NO WARRANTY.
-/ * No restriction on use. You can use, modify and redistribute it for
-/   personal, non-profit or commercial product UNDER YOUR RESPONSIBILITY.
-/ * Redistributions of source code must retain the above copyright notice.
-/
-/----------------------------------------------------------------------------*/
-
 #ifndef _FATFS
 #define _FATFS	8051	/* Revision ID */
 
@@ -232,10 +216,15 @@ FRESULT     f_chdir (const TCHAR* path);								    /* Change current directory 
 FRESULT     f_chdrive (const TCHAR* path);								    /* Change current drive */
 FRESULT     f_getcwd (TCHAR* buff, UINT len);							    /* Get current directory */
 FRESULT     f_getfree (const TCHAR* path, DWORD* nclst, FATFS** fatfs);	    /* Get number of free clusters on the drive */
+
 FRESULT     f_getlabel (const TCHAR* path, TCHAR* label, DWORD* vsn);	    /* Get volume label */
 FRESULT     f_setlabel (const TCHAR* label);							    /* Set volume label */
+
 FRESULT     f_mount (FATFS* fs, const TCHAR* path, BYTE opt);			    /* Mount/Unmount a logical drive */
-FRESULT     f_mkfs (const TCHAR* path, BYTE sfd, UINT au);				    /* Create a file system on the volume */
+FRESULT     f_unmount (FATFS* fs);                          			    /* Mount/Unmount a logical drive */
+FRESULT     f_create_fs (LPCWSTR path, BYTE sfd, UINT au);				    /* Create a file system on the volume */
+FRESULT     f_open_fs(LPCWSTR path);                                        /* Open a file system */
+
 FRESULT     f_fdisk (BYTE pdrv, const DWORD szt[], void* work);			    /* Divide a physical drive into some partitions */
 int         f_putc (TCHAR c, FIL* fp);									    /* Put a character to the file */
 int         f_puts (const TCHAR* str, FIL* cp);							    /* Put a string to the file */

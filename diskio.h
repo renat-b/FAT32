@@ -1,7 +1,3 @@
-/*-----------------------------------------------------------------------/
-/  Low level disk interface modlue include file   (C)ChaN, 2013          /
-/-----------------------------------------------------------------------*/
-
 #ifndef _DISKIO_DEFINED
 #define _DISKIO_DEFINED
 
@@ -19,7 +15,8 @@ extern "C" {
 typedef BYTE	DSTATUS;
 
 /* Results of Disk Functions */
-typedef enum {
+typedef enum 
+{
 	RES_OK = 0,		/* 0: Successful */
 	RES_ERROR,		/* 1: R/W Error */
 	RES_WRPRT,		/* 2: Write Protected */
@@ -32,12 +29,13 @@ typedef enum {
 /* Prototypes for disk control functions */
 
 
-DSTATUS disk_status (BYTE pdrv);
-DSTATUS disk_initialize (BYTE pdrv);
-DRESULT disk_read (BYTE pdrv, BYTE* buff, DWORD sector, UINT count);
-DRESULT disk_write (BYTE pdrv, const BYTE* buff, DWORD sector, UINT count);
-DRESULT disk_ioctl (BYTE pdrv, BYTE cmd, void* buff);
-DWORD get_fattime(void);
+DSTATUS     disk_status (BYTE pdrv);
+DSTATUS     disk_initialize (LPCWSTR path);
+DSTATUS     disk_shutdown();
+DRESULT     disk_read   (BYTE pdrv, BYTE* buff, DWORD sector, UINT count);
+DRESULT     disk_write  (BYTE pdrv, const BYTE* buff, DWORD sector, UINT count);
+DRESULT     disk_ioctl  (BYTE pdrv, BYTE cmd, void* buff);
+DWORD       get_fattime (void);
 
 
 /* Disk Status Bits (DSTATUS) */

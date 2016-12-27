@@ -1,7 +1,3 @@
-/*---------------------------------------------------------------------------/
-/  FatFs - FAT file system module configuration file  R0.10b (C)ChaN, 2014
-/---------------------------------------------------------------------------*/
-
 #ifndef _FFCONF
 #define _FFCONF 8051	/* Revision ID */
 
@@ -57,7 +53,7 @@
 / Locale and Namespace Configurations
 /---------------------------------------------------------------------------*/
 
-#define _CODE_PAGE	932
+#define _CODE_PAGE	1252
 /* The _CODE_PAGE specifies the OEM code page to be used on the target system.
 /  Incorrect setting of the code page can cause a file open failure.
 /
