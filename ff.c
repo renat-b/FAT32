@@ -1232,7 +1232,7 @@ FRESULT dir_alloc (
 /* Directory handling - Load/Store start cluster number                  */
 /*-----------------------------------------------------------------------*/
 
-static DWORD ld_clust (
+static DWORD load_clust (
     FATFS* fs,    /* Pointer to the fs object		*/
     BYTE*  dir    /* Pointer to the directory entry */
 )
@@ -1249,7 +1249,7 @@ static DWORD ld_clust (
 
 #if !_FS_READONLY
 static
-void st_clust (
+void store_clust (
     BYTE* dir,    /* Pointer to the directory entry */
     DWORD cl      /* Value to be set */
 )
@@ -1260,15 +1260,11 @@ void st_clust (
 #endif
 
 
-
-
 /*-----------------------------------------------------------------------*/
 /* LFN handling - Test/Pick/Fit an LFN segment from/to directory entry   */
 /*-----------------------------------------------------------------------*/
 #if _USE_LFN
-static
-const BYTE LfnOfs[] = {1,3,5,7,9,14,16,18,20,22,24,28,30};    /* Offset of LFN characters in the directory entry */
-
+static const BYTE LfnOfs[] = { 1,3,5,7,9,14,16,18,20,22,24,28,30 };    /* Offset of LFN characters in the directory entry */
 
 static int cmp_lfn (     /* 1:Matched, 0:Not matched                                */
     WCHAR* lfnbuf,       /* Pointer to the LFN to be compared						*/
@@ -1279,15 +1275,21 @@ static int cmp_lfn (     /* 1:Matched, 0:Not matched                            
     WCHAR wc, uc;
 
     i = ((dir[LDIR_Ord] & ~LLE) - 1) * 13;    /* Get offset in the LFN buffer */
-    s = 0; wc = 1;
-    do {
-        uc = LD_WORD(dir+LfnOfs[s]);    /* Pick an LFN character from the entry */
-        if (wc) {    /* Last character has not been processed */
+    s  = 0; 
+    wc = 1;
+    do 
+    {
+        uc = LD_WORD(dir+LfnOfs[s]);    /* Pick an LFN character from the entry  */
+        if (wc)                         /* Last character has not been processed */
+        {
             wc = ff_wtoupper(uc);        /* Convert it to upper case */
             if (i >= _MAX_LFN || wc != ff_wtoupper(lfnbuf[i++]))    /* Compare it */
                 return 0;                /* Not matched */
-        } else {
-            if (uc != 0xFFFF) return 0;    /* Check filler */
+        } 
+        else 
+        {
+            if (uc != 0xFFFF)     /* Check filler */
+                return 0;
         }
     } while (++s < 13);                /* Repeat until all characters in the entry are checked */
 
@@ -2220,7 +2222,7 @@ FRESULT follow_path (    /* FR_OK(0): successful, !=0: error code */
                 res = FR_NO_PATH; 
                 break;
             }
-            dp->start_clust = ld_clust(dp->fs, dir);
+            dp->start_clust = load_clust(dp->fs, dir);
         }
     }
 
@@ -2311,7 +2313,7 @@ BYTE check_fs (    /* 0:FAT boor sector, 1:Valid boor sector but not FAT, 2:Not 
     if (LD_WORD(&fs->win[BS_55AA]) != 0xAA55)    /* Check boot record signature (always placed at offset 510 even if the sector size is >512) */
         return 2;
 
-    if ((LD_DWORD(&fs->win[BS_FilSysType]) & 0xFFFFFF)   == 0x544146)    /* Check "FAT" string */
+    if ((LD_DWORD(&fs->win[BS_FilSysType]) & 0xFFFFF)   == 0x544146)    /* Check "FAT" string */
         return 0;
 
     if ((LD_DWORD(&fs->win[BS_FilSysType32]) & 0xFFFFFF) == 0x544146)    /* Check "FAT" string */
@@ -2686,8 +2688,8 @@ FRESULT f_open (
                 ST_DWORD(dir+DIR_CrtTime, dw);
                 dir[DIR_Attr] = 0;                /* Reset attribute */
                 ST_DWORD(dir+DIR_FileSize, 0);    /* size = 0 */
-                cl = ld_clust(dj.fs, dir);        /* Get start cluster */
-                st_clust(dir, 0);                /* cluster = 0 */
+                cl = load_clust(dj.fs, dir);        /* Get start cluster */
+                store_clust(dir, 0);                /* cluster = 0 */
                 dj.fs->wflag = 1;
                 if (cl)                         /* Remove the cluster chain if exist */
                 {
@@ -2750,7 +2752,7 @@ FRESULT f_open (
         {
             fp->flag = mode;                    /* File access mode */
             fp->err = 0;                        /* Clear error flag */
-            fp->start_clust = ld_clust(dj.fs, dir);    /* File start cluster */
+            fp->start_clust = load_clust(dj.fs, dir);    /* File start cluster */
             fp->sector_per_fat = LD_DWORD(dir+DIR_FileSize);    /* File size */
             fp->fptr = 0;                        /* File pointer */
             fp->dsect = 0;
@@ -3033,7 +3035,7 @@ FRESULT f_sync (
                 dir = fp->dir_ptr;
                 dir[DIR_Attr] |= AM_ARC;                    /* Set archive bit */
                 ST_DWORD(dir+DIR_FileSize, fp->sector_per_fat);        /* Update file size */
-                st_clust(dir, fp->start_clust);                    /* Update start cluster */
+                store_clust(dir, fp->start_clust);                    /* Update start cluster */
                 tm = get_fattime();                            /* Update updated time */
                 ST_DWORD(dir+DIR_WrtTime, tm);
                 ST_WORD(dir+DIR_LstAccDate, 0);
@@ -3132,7 +3134,7 @@ FRESULT f_chdir (
                 dj.fs->cdir = dj.start_clust;    /* Start directory itself */
             } else {
                 if (dj.dir[DIR_Attr] & AM_DIR)    /* Reached to the directory */
-                    dj.fs->cdir = ld_clust(dj.fs, dj.dir);
+                    dj.fs->cdir = load_clust(dj.fs, dj.dir);
                 else
                     res = FR_NO_PATH;        /* Reached but a file */
             }
@@ -3171,13 +3173,13 @@ FRESULT f_getcwd (
             if (res != FR_OK) break;
             res = dir_read(&dj, 0);
             if (res != FR_OK) break;
-            dj.start_clust = ld_clust(dj.fs, dj.dir);    /* Goto parent directory */
+            dj.start_clust = load_clust(dj.fs, dj.dir);    /* Goto parent directory */
             res = dir_set_directory_index(&dj, 0);
             if (res != FR_OK) break;
             do {                            /* Find the entry links to the child directory */
                 res = dir_read(&dj, 0);
                 if (res != FR_OK) break;
-                if (ccl == ld_clust(dj.fs, dj.dir)) break;    /* Found the entry */
+                if (ccl == load_clust(dj.fs, dj.dir)) break;    /* Found the entry */
                 res = dir_next(&dj, 0);    
             } while (res == FR_OK);
             if (res == FR_NO_FILE) res = FR_INT_ERR;/* It cannot be 'not found'. */
@@ -3438,7 +3440,7 @@ FRESULT f_opendir (
             if (dp->dir)                           /* It is not the origin directory itself */
 			{
                 if (dp->dir[DIR_Attr] & AM_DIR)    /* The object is a sub directory */
-                    dp->start_clust = ld_clust(fs, dp->dir);
+                    dp->start_clust = load_clust(fs, dp->dir);
                 else                               /* The object is a file */
                     res = FR_NO_PATH;
             }
@@ -3737,7 +3739,7 @@ FRESULT f_unlink (
                 if (dir[DIR_Attr] & AM_RDO)
                     res = FR_DENIED;        /* Cannot remove R/O object */
             }
-            dclst = ld_clust(dj.fs, dir);
+            dclst = load_clust(dj.fs, dir);
             if (res == FR_OK && (dir[DIR_Attr] & AM_DIR)) {    /* Is it a sub-dir? */
                 if (dclst < 2) {
                     res = FR_INT_ERR;
@@ -3826,7 +3828,7 @@ FRESULT f_mkdir (
                 dir[DIR_Name] = '.';
                 dir[DIR_Attr] = AM_DIR;
                 ST_DWORD(dir+DIR_WrtTime, tm);
-                st_clust(dir, dcl);                
+                store_clust(dir, dcl);                
                 mem_cpy(dir+SZ_DIR, dir, SZ_DIR);     /* Create ".." entry */
                 dir[SZ_DIR+1] = '.'; 
 
@@ -3834,12 +3836,12 @@ FRESULT f_mkdir (
                 if (dj.fs->fs_type == FS_FAT32 && pcl == dj.fs->dir_base_sector)
                     pcl = 0;
 
-                st_clust(dir+SZ_DIR, pcl);
+                store_clust(dir+SZ_DIR, pcl);
 
                 for (n = dj.fs->sector_per_claster; n; n--)            /* Write dot entries and clear following sectors */ 
                 {
                     dj.fs->win_sect = dsc++;
-                    dj.fs->wflag   = 1;
+                    dj.fs->wflag    = 1;
 
                     res = sync_window(dj.fs);
                     if (res != FR_OK) 
@@ -3859,7 +3861,7 @@ FRESULT f_mkdir (
 				    dir = dj.dir;
 				    dir[DIR_Attr] = AM_DIR;                   /* Attribute */
 				    ST_DWORD(dir+DIR_WrtTime, tm);            /* Created time */
-				    st_clust(dir, dcl);                       /* Table start cluster */
+				    store_clust(dir, dcl);                       /* Table start cluster */
 				    dj.fs->wflag  = 1;
 				    res = sync_fs(dj.fs);
 				}
@@ -4005,7 +4007,7 @@ FRESULT f_rename (
                         dir[DIR_Attr] = buf[0] | AM_ARC;
                         djo.fs->wflag = 1;
                         if (djo.start_clust != djn.start_clust && (dir[DIR_Attr] & AM_DIR)) {        /* Update .. entry in the directory if needed */
-                            dw = clust2sect(djo.fs, ld_clust(djo.fs, dir));
+                            dw = clust2sect(djo.fs, load_clust(djo.fs, dir));
                             if (!dw) {
                                 res = FR_INT_ERR;
                             } else {
@@ -4013,7 +4015,7 @@ FRESULT f_rename (
                                 dir = djo.fs->win+SZ_DIR;    /* .. entry */
                                 if (res == FR_OK && dir[1] == '.') {
                                     dw = (djo.fs->fs_type == FS_FAT32 && djn.start_clust == djo.fs->dir_base_sector) ? 0 : djn.start_clust;
-                                    st_clust(dir, dw);
+                                    store_clust(dir, dw);
                                     djo.fs->wflag = 1;
                                 }
                             }

@@ -24,13 +24,10 @@ DWORD RamDiskSize;	                /* Size of RAM disk in unit of sector */
 static FATFS  FatFs;
 static FIL    DstFile;
 static HANDLE SrcFile;
-static TCHAR  src_path[512], DstPath[512];
-static BYTE   Buff[4096];
-static UINT   Dirs, Files;
-
+static TCHAR  src_path[512], dst_path[512];
+static BYTE   buff[4096];
+static UINT   dirs_count, files_count;
 static WIN32_FIND_DATA Fd;
-
-
 
 int maketree (void)
 {
@@ -40,7 +37,7 @@ int maketree (void)
 	UINT    bw;
 
 	slen = wcslen(src_path);
-	dlen = wcslen(DstPath);
+	dlen = wcslen(dst_path);
 
     wsprintf(&src_path[slen], L"/*");
 
@@ -51,29 +48,29 @@ int maketree (void)
 	} 
     else 
     {
-		for (;;) 
+		for (;;)
         {
             wsprintf(&src_path[slen], L"/%s", Fd.cFileName);
-            wsprintf(&DstPath[dlen],  L"/%s", Fd.cFileName);
-
+            wsprintf(&dst_path[dlen],  L"/%s", Fd.cFileName);
 
 			if (Fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)    /* The item is a directory */
             {	
 				if (wcscmp(Fd.cFileName, L".") && wcscmp(Fd.cFileName, L".."))
                 {
-					if (f_mkdir(DstPath))    /* Create destination directory */
+					if (f_mkdir(dst_path))       /* Create destination directory */
                     {	
-						printf("Failed to create directory.\n"); break;
+						wprintf(L"Failed to create directory.\n");
+                        break;
 					}
 
-					if (!maketree())    /* Enter the directory */
+					if (!maketree())            /* Enter the directory */
                         break;	
 
-					Dirs++;
+					dirs_count++;
 				}
 			} 
-            else    /* The item is a file */
-            {	
+            else
+            {
                 wprintf(L"%s\n", src_path);
 				if ((SrcFile = CreateFile(src_path, GENERIC_READ, 0, 0, OPEN_EXISTING, 0, 0)) == INVALID_HANDLE_VALUE)   /* Open source file */
                 {	
@@ -81,7 +78,7 @@ int maketree (void)
                     break;
 				}
 
-				if (f_open(&DstFile, DstPath, FA_CREATE_ALWAYS | FA_WRITE))    /* Create destination file */
+				if (f_open(&DstFile, dst_path, FA_CREATE_ALWAYS | FA_WRITE))    /* Create destination file */
                 {	
                     wprintf(L"Failed to create destination file.\n"); 
                     break;
@@ -89,11 +86,11 @@ int maketree (void)
 
 				do   /* Copy source file to destination file */
                 {	
-					ReadFile(SrcFile, Buff, sizeof(Buff), &br, 0);
+					ReadFile(SrcFile, buff, sizeof(buff), &br, 0);
 					if (br == 0) 
                         break;
 
-					f_write(&DstFile, Buff, (UINT)br, &bw);
+					f_write(&DstFile, buff, (UINT)br, &bw);
 				} while (br == bw);
 
 				CloseHandle(SrcFile);
@@ -104,7 +101,7 @@ int maketree (void)
 					wprintf(L"Failed to write file.\n"); 
                     break;
 				}
-				Files++;
+				files_count++;
 			}
 			if (!FindNextFile(hdir, &Fd)) 
             {
@@ -115,25 +112,34 @@ int maketree (void)
 		FindClose(hdir);
 	}
 	src_path[slen] = 0;
-	DstPath[dlen] = 0;
+	dst_path[dlen] = 0;
 	return rv;
 }
 
 //int wmain()
-//{
-//	FRESULT ret;
-//	DIR     dir = {0};
-//	RamDiskSize = 65526+16*1024;
-//	
-//	ret = f_mount(&FatFs, L"", 0);
+//{	
+//    UINT    csz;
+//    wchar_t path[MAX_PATH];
+//    DIR     dir;
 //
-//	ret = f_mkfs(L"", 1, 512);
+//    wcscpy(path,     L"C:\\tmp\\fat32.dat");
+//    RamDiskSize      =  64 * 1024 * 2;
+//    csz              =  512;
+//    
+//    /* create an FAT volume */
+////    f_mount(&FatFs, L"", 0);
+//    
+//    if (f_open_fs(path))        
+//        if (f_create_fs(path, 1, csz))
+//          {
+//              wprintf(L"Failed to create FAT volume. Adjust volume size or cluster size.\n");
+//        	  return 2;
+//          }
 //
-//	ret = f_mkdir(L"projects");
-//	ret = f_mkdir(L"projects/one");
-//
-//	ret = f_opendir(&dir, L"projects/one");
+//	f_opendir(&dir, L"2/2_2");
 //	f_closedir(&dir);
+//
+//    f_unmount(&FatFs);
 //}
 
 
@@ -143,7 +149,7 @@ int wmain (int argc, wchar_t* argv[])
     wchar_t path[MAX_PATH];
 
     wcscpy(path,     L"C:\\tmp\\fat32.dat");
-    wcscpy(src_path, L"D:\\tmp\\CLCL\\English");
+    wcscpy(src_path, L"D:\\tmp\\FAT32");
 	RamDiskSize      =  64 * 1024 * 2;
 	csz              =  512;
 
@@ -163,7 +169,7 @@ int wmain (int argc, wchar_t* argv[])
 
     f_unmount(&FatFs);
 
-	if (!Files) 
+	if (!files_count) 
     { 
         wprintf(L"No file in the source directory."); 
         return 3; 
