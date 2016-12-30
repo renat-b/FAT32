@@ -1,10 +1,12 @@
 #include <windows.h>
 #include "diskio.h"
 #include "ff.h"
+#include "stdlib.h"
 
 
 
-struct fat_driver_info
+typedef struct fat_driver_info  *p_fat_driver_info;
+typedef struct fat_driver_info
 {
 	HANDLE          windows_file;
 	DWORD           thread;
@@ -13,40 +15,36 @@ struct fat_driver_info
 
 	int             start_sector;
 	char            data[1024 * 1024];
-};
+} fat_driver_info;
 
-static struct fat_driver_info *global_fat_info[16] = { 0 };
-wchar_t   fat32_file_name[MAX_PATH] = { 0 };
+
+static p_fat_driver_info s_global_fat_info[16] = { 0 };
+wchar_t s_fat32_file_name[MAX_PATH]            = { 0 };
 /*-------------------------------------------------------------------------*/
 /*																		   */
 /*   Module Private Functions											   */
 /*																		   */
 /*-------------------------------------------------------------------------*/
 
-
 SYSTEMTIME   sys_time;	    /* Time at creation of RAM disk */
 
-extern BYTE *RamDisk;		/* Poiter to the RAM disk (main.c) */
-extern DWORD RamDiskSize;	/* Size of RAM disk in unit of sector (main.c) */
+extern BYTE     *RamDisk;		/* Poiter to the RAM disk (main.c) */
+extern DWORD     RamDiskSize;	/* Size of RAM disk in unit of sector (main.c) */
 
 /*-----------------------------------------------------------------------*/
 /*																		 */
 /*   Public Functions													 */
 /*																		 */
 /*-----------------------------------------------------------------------*/
-struct fat_driver_info *disk_driver_find(void)
+p_fat_driver_info disk_driver_find(void)
 {
-    HANDLE thread_id = GetCurrentThreadId();
-    struct fat_driver_info *driver;
+    int   i;
+    DWORD thread_id  = GetCurrentThreadId();
+    p_fat_driver_info driver;
 
-    for (int i = 0; i < _countof(global_fat_info); i++)
+    for (i = 0; i < _countof(s_global_fat_info); i++)
     {
-        if (global_fat_info[i]->thread == thread_id)
-        {
-            return global_fat_info[i];
-        }
-
-        if (global_fat_info[i]->thread == 0)
+        if (!s_global_fat_info[i])
         {
             driver = malloc(sizeof(*driver));
             if (!driver)
@@ -55,7 +53,7 @@ struct fat_driver_info *disk_driver_find(void)
 
             memset(driver, 0, sizeof(*driver));
 
-            driver->windows_file = CreateFile(fat32_file_name, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_WRITE | FILE_SHARE_READ, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+            driver->windows_file = CreateFile(s_fat32_file_name, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_WRITE | FILE_SHARE_READ, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 
             if (driver->windows_file == INVALID_HANDLE_VALUE)
             {
@@ -68,8 +66,13 @@ struct fat_driver_info *disk_driver_find(void)
             driver->size_file = GetFileSize(driver->windows_file, NULL);
 
             driver->thread = GetCurrentThreadId();
-            global_fat_info[i] = driver;
+            s_global_fat_info[i] = driver;
             return driver;
+        }
+
+        if (s_global_fat_info[i]->thread == thread_id)
+        {
+            return s_global_fat_info[i];
         }
     }
 
@@ -79,62 +82,34 @@ struct fat_driver_info *disk_driver_find(void)
 /* Initialize Disk Drive                                                 */
 /*-----------------------------------------------------------------------*/
 
-DSTATUS disk_initialize (
-	LPCWSTR path				/* Path */
-)
+DSTATUS disk_initialize(LPCWSTR path)
 {
-    DSTATUS err = STA_NOINIT;
-    fat_driver_info *ret = NULL;
+    if (!path)
+        return STA_NOINIT;
 
-	if ( !path) 
-		return err;
-   
-    ret = disk_driver_find();
-
-    if (!ret)
-        return err;
-
-
-
-    if (global_fat_info)
-    {
-        return 0;
-    }
-
-    global_fat_info = malloc(sizeof(*global_fat_info));
-    if (!global_fat_info)
-        return err;
-
-    memset(global_fat_info, 0, sizeof(*global_fat_info));
-
-    global_fat_info->windows_file = CreateFile(path, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_WRITE | FILE_SHARE_READ, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-    
-    if (global_fat_info->windows_file == INVALID_HANDLE_VALUE)
-    {
-        free(global_fat_info);
-        global_fat_info = NULL;
-        return err;
-    }
-
-    global_fat_info->offset = 0;
-    global_fat_info->size_file = GetFileSize(global_fat_info->windows_file, NULL);
-
-    global_fat_info->thread = GetCurrentThreadId();
-
+    wcscpy(s_fat32_file_name, path);
     return 0;
 }
 
 DSTATUS disk_shutdown()
 {
-    if ( !global_fat_info)
+    int  i;
+    p_fat_driver_info driver;
+
+    for (i = 0; i < _countof(s_global_fat_info); i++)
     {
-        return 0;
+        driver = s_global_fat_info[i];
+        if (driver)
+        {
+            //pointer to incomplete class type not allowed;
+            if (driver->windows_file != 0)
+            {
+                CloseHandle(driver->windows_file);
+                free(driver);
+                s_global_fat_info[i] = NULL;
+            }
+        }
     }
-
-    CloseHandle(global_fat_info->windows_file);
-    free(global_fat_info);
-    global_fat_info = NULL;
-
     return 0;
 }
 
@@ -146,14 +121,16 @@ DSTATUS disk_status (
 )
 {
     DSTATUS err = STA_NOINIT;
+    p_fat_driver_info driver;
 
 	if (pdrv) 
         return err;
 
-    if ( !global_fat_info)
+    driver = disk_driver_find();
+    if (!driver)
         return err;
 
-    if (global_fat_info->windows_file == INVALID_HANDLE_VALUE)
+    if (driver->windows_file == INVALID_HANDLE_VALUE)
         return err;
 
     return 0;
@@ -172,14 +149,17 @@ DRESULT disk_read (
 )
 {
     DWORD full_size, readed;
+    p_fat_driver_info driver;
 
     if (pdrv)
         return RES_NOTRDY;
+    
+    driver = disk_driver_find();
 
-    if ( !global_fat_info)
+    if ( !driver)
         return RES_NOTRDY;
 
-    if(global_fat_info->windows_file == INVALID_HANDLE_VALUE)
+    if (driver->windows_file == INVALID_HANDLE_VALUE)
         return RES_NOTRDY;
 
     if (sector >= RamDiskSize)
@@ -187,14 +167,14 @@ DRESULT disk_read (
 
     full_size = sector * 512 + count * 512;
 
-    if (full_size > global_fat_info->size_file)
+    if (full_size > driver->size_file)
     {
-        SetFilePointer(global_fat_info->windows_file, full_size, NULL, FILE_BEGIN);
-        global_fat_info->size_file = full_size;
+        SetFilePointer(driver->windows_file, full_size, NULL, FILE_BEGIN);
+        driver->size_file = full_size;
     } 
     
-    SetFilePointer(global_fat_info->windows_file, sector * 512, NULL, FILE_BEGIN);
-    if (ReadFile(global_fat_info->windows_file, buff, count * 512, &readed, NULL)==FALSE)
+    SetFilePointer(driver->windows_file, sector * 512, NULL, FILE_BEGIN);
+    if (ReadFile(driver->windows_file, buff, count * 512, &readed, NULL)==FALSE)
         return RES_ERROR;
 
     if (readed != count * 512)
@@ -215,29 +195,31 @@ DRESULT disk_write (
 )
 {
     DWORD writed=0, full_size;
+    p_fat_driver_info driver;
 
     if (pdrv)
         return RES_NOTRDY;
 
-    if (!global_fat_info)
+    driver = disk_driver_find();
+    if (!driver)
         return RES_NOTRDY;
 
-    if (global_fat_info->windows_file == INVALID_HANDLE_VALUE)
+    if (driver->windows_file == INVALID_HANDLE_VALUE)
         return RES_NOTRDY;
 
     if (sector >= RamDiskSize)
         return RES_PARERR;
 
-    SetFilePointer(global_fat_info->windows_file, sector * 512, NULL, FILE_BEGIN);
-    if (WriteFile(global_fat_info->windows_file, buff, count * 512, &writed, NULL) == FALSE)
+    SetFilePointer(driver->windows_file, sector * 512, NULL, FILE_BEGIN);
+    if (WriteFile(driver->windows_file, buff, count * 512, &writed, NULL) == FALSE)
         return RES_ERROR;
 
     if (writed != count * 512)
         return RES_ERROR;
 
     full_size = sector * 512 + count * 512;
-    if (full_size > global_fat_info->size_file)
-        global_fat_info->size_file = full_size;
+    if (full_size > driver->size_file)
+        driver->size_file = full_size;
 
     return RES_OK;
 }
@@ -255,7 +237,7 @@ DRESULT disk_ioctl (
 	DRESULT err;
 	
 	err = RES_ERROR;
-    if ( !pdrv && global_fat_info)
+    if ( !pdrv && s_global_fat_info)
 	{
 		switch (ctrl) 
 		{
