@@ -156,8 +156,8 @@ int wmain (int argc, wchar_t* argv[])
 	/* create an FAT volume */
 	f_mount(&FatFs, L"", 0);
 
-    if (f_open_fs(path))        
-	    if (f_create_fs(path, 1, csz))
+    if (f_open_fs(path) !=0)        
+	    if (f_create_fs(path, 1, csz) !=0)
         {
             wprintf(L"Failed to create FAT volume. Adjust volume size or cluster size.\n");
 	    	return 2;
